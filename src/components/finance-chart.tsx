@@ -1,0 +1,6 @@
+import { formatCurrency } from "@/lib/money";
+
+export function FinanceChart({ bars }: { bars: Array<{ label: string; revenueCents: number; expenseCents: number }> }) {
+  const max = Math.max(...bars.flatMap((bar) => [bar.revenueCents, bar.expenseCents]), 1);
+  return <div><div className="bar-chart" role="img" aria-label="Comparação de faturamento e despesas por semana">{bars.map((bar) => <div className="bar-column" key={bar.label}><div className="bar-stack" title={`${bar.label}: ${formatCurrency(bar.revenueCents)} em entradas, ${formatCurrency(bar.expenseCents)} em despesas`}><i aria-hidden="true" style={{ height: `${Math.max((bar.revenueCents / max) * 100, 2)}%` }} /><i aria-hidden="true" style={{ height: `${Math.max((bar.expenseCents / max) * 100, 2)}%` }} /></div><span>{bar.label}</span></div>)}</div><table className="sr-only"><caption>Dados do movimento financeiro</caption><thead><tr><th>Período</th><th>Faturamento</th><th>Despesas</th></tr></thead><tbody>{bars.map((bar) => <tr key={bar.label}><th scope="row">{bar.label}</th><td>{formatCurrency(bar.revenueCents)}</td><td>{formatCurrency(bar.expenseCents)}</td></tr>)}</tbody></table><div className="chart-summary"><span>As barras mostram o movimento do período selecionado.</span></div></div>;
+}

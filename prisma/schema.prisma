@@ -1,0 +1,222 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum MemberRole {
+  OWNER
+  MEMBER
+}
+
+enum AuthTokenPurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELED
+  NO_SHOW
+}
+
+enum PaymentType {
+  DEPOSIT
+  BALANCE
+  OTHER
+}
+
+enum PaymentMethod {
+  PIX
+  CASH
+  CARD
+  TRANSFER
+  OTHER
+}
+
+enum PaymentStatus {
+  RECEIVED
+  VOIDED
+}
+
+enum ExpenseStatus {
+  PENDING
+  PAID
+  CANCELED
+}
+
+model User {
+  id              String               @id @default(uuid()) @db.Uuid
+  name            String
+  email           String               @unique @db.VarChar(320)
+  passwordHash    String
+  emailVerifiedAt DateTime?            @db.Timestamptz(3)
+  sessionVersion  Int                  @default(0)
+  createdAt       DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime             @updatedAt @db.Timestamptz(3)
+  memberships     OrganizationMember[]
+  authTokens      AuthToken[]
+
+  @@index([email])
+  @@map("users")
+}
+
+model Organization {
+  id           String               @id @default(uuid()) @db.Uuid
+  name         String               @db.VarChar(160)
+  slug         String               @unique @db.VarChar(180)
+  currencyCode String               @default("BRL") @db.VarChar(3)
+  timezone     String               @default("America/Sao_Paulo") @db.VarChar(64)
+  archivedAt   DateTime?            @db.Timestamptz(3)
+  createdAt    DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime             @updatedAt @db.Timestamptz(3)
+  members      OrganizationMember[]
+  clients      Client[]
+  services     Service[]
+  appointments Appointment[]
+  payments     Payment[]
+  expenses     Expense[]
+
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @db.Uuid
+  userId         String        @db.Uuid
+  role           MemberRole    @default(OWNER)
+  active         Boolean       @default(true)
+  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime      @updatedAt @db.Timestamptz(3)
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments   Appointment[]
+
+  @@unique([organizationId, userId])
+  @@index([userId, active])
+  @@index([organizationId, active])
+  @@map("organization_members")
+}
+
+model AuthToken {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  purpose   AuthTokenPurpose
+  tokenHash String           @unique @db.VarChar(128)
+  expiresAt DateTime         @db.Timestamptz(3)
+  usedAt    DateTime?        @db.Timestamptz(3)
+  createdAt DateTime         @default(now()) @db.Timestamptz(3)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, expiresAt])
+  @@map("auth_tokens")
+}
+
+model Client {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @db.Uuid
+  name           String        @db.VarChar(160)
+  phone          String?       @db.VarChar(32)
+  email          String?       @db.VarChar(320)
+  notes          String?       @db.Text
+  archivedAt     DateTime?     @db.Timestamptz(3)
+  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime      @updatedAt @db.Timestamptz(3)
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  appointments   Appointment[]
+
+  @@index([organizationId, name])
+  @@index([organizationId, archivedAt])
+  @@map("clients")
+}
+
+model Service {
+  id              String        @id @default(uuid()) @db.Uuid
+  organizationId  String        @db.Uuid
+  name            String        @db.VarChar(160)
+  description     String?       @db.Text
+  durationMinutes Int
+  priceCents      Int
+  isActive        Boolean       @default(true)
+  archivedAt      DateTime?     @db.Timestamptz(3)
+  createdAt       DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime      @updatedAt @db.Timestamptz(3)
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  appointments    Appointment[]
+
+  @@index([organizationId, isActive, archivedAt])
+  @@map("services")
+}
+
+model Appointment {
+  id              String             @id @default(uuid()) @db.Uuid
+  organizationId  String             @db.Uuid
+  memberId        String             @db.Uuid
+  clientId        String             @db.Uuid
+  serviceId       String             @db.Uuid
+  startsAt        DateTime           @db.Timestamptz(3)
+  endsAt          DateTime           @db.Timestamptz(3)
+  durationMinutes Int
+  priceCents      Int
+  status          AppointmentStatus  @default(SCHEDULED)
+  notes           String?            @db.Text
+  createdAt       DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime           @updatedAt @db.Timestamptz(3)
+  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  member          OrganizationMember @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  client          Client             @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  service         Service            @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  payments        Payment[]
+
+  @@index([organizationId, startsAt])
+  @@index([organizationId, status, startsAt])
+  @@index([memberId, startsAt])
+  @@index([clientId, startsAt])
+  @@map("appointments")
+}
+
+model Payment {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @db.Uuid
+  appointmentId  String        @db.Uuid
+  type           PaymentType   @default(OTHER)
+  amountCents    Int
+  method         PaymentMethod
+  status         PaymentStatus @default(RECEIVED)
+  receivedAt     DateTime      @db.Timestamptz(3)
+  notes          String?       @db.Text
+  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime      @updatedAt @db.Timestamptz(3)
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  appointment    Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, receivedAt, status])
+  @@index([appointmentId, status])
+  @@map("payments")
+}
+
+model Expense {
+  id             String         @id @default(uuid()) @db.Uuid
+  organizationId String         @db.Uuid
+  description    String         @db.VarChar(200)
+  category       String         @db.VarChar(80)
+  amountCents    Int
+  expenseDate    DateTime       @db.Date
+  dueDate        DateTime?      @db.Date
+  paidAt         DateTime?      @db.Timestamptz(3)
+  status         ExpenseStatus  @default(PENDING)
+  method         PaymentMethod?
+  notes          String?        @db.Text
+  createdAt      DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime       @updatedAt @db.Timestamptz(3)
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, expenseDate, status])
+  @@index([organizationId, paidAt, status])
+  @@map("expenses")
+}

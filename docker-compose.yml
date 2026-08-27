@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: beautyflow-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: beautyflow
+      POSTGRES_PASSWORD: beautyflow
+      POSTGRES_DB: beautyflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - beautyflow-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U beautyflow -d beautyflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  beautyflow-postgres-data:
