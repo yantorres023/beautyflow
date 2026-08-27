@@ -19,7 +19,7 @@ export default function HomePage() {
           <p className="eyebrow">Gestão feita para quem transforma</p>
           <h1>Seu talento no centro. Sua gestão no fluxo.</h1>
           <p className="hero-lede">O BeautyFlow reúne agenda, clientes e finanças para você trabalhar com mais clareza e tranquilidade.</p>
-          <div className="hero-actions"><Link href="/cadastrar" className="button button-primary button-large">Criar meu espaço <ArrowRight size={18} aria-hidden="true" /></Link><span className="hero-note">Comece com o essencial.</span></div>
+          <div className="hero-actions"><Link href="/cadastrar" className="button button-primary button-large">Criar meu espaço <ArrowRight size={18} aria-hidden="true" /></Link><Link href="/demo" className="button button-secondary button-large">Testar sem cadastro</Link><span className="hero-note">Comece com o essencial.</span></div>
         </div>
         <div className="hero-preview" aria-label="Prévia do dashboard BeautyFlow">
           <div className="preview-top"><div><span className="preview-kicker">Visão do mês</span><strong>Seu BeautyFlow</strong></div><span className="preview-avatar">M</span></div>

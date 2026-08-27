@@ -28,6 +28,10 @@ No PowerShell, use `Copy-Item .env.example .env.local`. Ajuste `AUTH_SECRET` e, 
 
 Abra `http://localhost:3000`. O usuário seed usa `SEED_USER_EMAIL` e `SEED_USER_PASSWORD`; altere esses valores no `.env.local` antes de executar o seed.
 
+## Demonstração sem cadastro
+
+Acesse `http://localhost:3000/demo` para explorar o MVP sem criar conta ou configurar o banco. A demonstração usa apenas dados fictícios, permite navegar pelos módulos e simular cadastros, agendamentos, pagamentos e despesas. As alterações ficam isoladas no `localStorage` deste navegador; use “Resetar dados” para restaurar o cenário inicial. Nunca informe dados reais de clientes ou financeiros nesse ambiente.
+
 ## Comandos úteis
 
 `npm run lint`, `npm run typecheck` e `npm test` executam as verificações estáticas e os testes unitários. `npm run test:e2e` executa os fluxos Playwright. `npm run db:generate` regenera o cliente Prisma; `npm run build` também faz isso automaticamente.

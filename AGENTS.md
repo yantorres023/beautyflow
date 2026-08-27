@@ -7,7 +7,7 @@ BeautyFlow is a tenant-aware Next.js application for a beauty professional to ma
 ## Project Structure
 
 - `src/app/`: App Router pages, route groups, layouts, and the Auth.js route handler.
-- `src/modules/`: feature modules (`auth`, `clients`, `services`, `appointments`, `payments`, `expenses`, and `dashboard`). Keep queries, commands, schemas, types, and feature components together.
+- `src/modules/`: feature modules (`auth`, `clients`, `services`, `appointments`, `payments`, `expenses`, `dashboard`, and `demo`). Keep queries, commands, schemas, types, and feature components together.
 - `src/server/`: Prisma, authentication context, authorization, and mail delivery integrations.
 - `src/lib/` and `src/components/`: shared utilities, layout pieces, and reusable UI primitives.
 - `prisma/`: `schema.prisma`, committed migrations, and development seed data.
@@ -22,6 +22,8 @@ Run `npm run dev` for local development, `npm run build` for a production build,
 Use TypeScript, two-space indentation, semantic Tailwind tokens, and accessible SVG icons; do not use emoji as structural icons. Use `camelCase` for values/functions, `PascalCase` for components/types, and `kebab-case` for route and feature directories. Use Server Components by default and Server Actions with Zod validation for mutations. Never query Prisma directly from UI components.
 
 Every tenant-owned query and mutation must resolve the authenticated organization on the server and filter by `organizationId`; never trust a tenant ID from the browser. Store money as integer centavos, dates as UTC timestamps or SQL dates where appropriate, and snapshot service price/duration into appointments. Enforce appointment overlap in PostgreSQL as well as in application validation. Archive historical records instead of deleting them.
+
+The public `/demo` route is intentionally separate from Auth.js and Prisma: it must use fictional browser-local state only, never accept secrets, and never read or write tenant data.
 
 ## Testing and Contributions
 
