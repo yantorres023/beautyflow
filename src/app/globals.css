@@ -144,11 +144,20 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .booking-date-button-selected { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 2px rgba(168, 77, 114, 0.1); color: var(--primary-dark); }
 .booking-date-button-selected strong { color: var(--primary-dark); }
 .booking-other-date { max-width: 220px; margin-top: 2px; }
-.booking-time-grid { display: flex; flex-wrap: wrap; gap: 7px; }
-.booking-time-button { display: inline-flex; min-height: 37px; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: 9px; padding: 0 10px; background: var(--surface); color: var(--ink-muted); cursor: pointer; font-size: 0.76rem; font-weight: 700; }
-.booking-time-button:hover { border-color: #d6c9ce; background: var(--background); }
+.booking-time-groups { display: grid; gap: 14px; }
+.booking-time-group { display: grid; gap: 7px; }
+.booking-time-group-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.booking-time-group-heading span { color: var(--ink); font-size: 0.75rem; font-weight: 700; }
+.booking-time-group-heading small { color: var(--ink-muted); font-size: 0.68rem; font-weight: 400; }
+.booking-time-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.booking-time-button { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 10px; padding: 0 8px; background: var(--surface); color: var(--ink-muted); cursor: pointer; font-size: 0.8rem; font-variant-numeric: tabular-nums; font-weight: 700; transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease; }
+.booking-time-button:hover { border-color: #d6c9ce; background: var(--background); color: var(--ink); }
 .booking-time-button-selected { border-color: var(--primary); background: var(--primary); color: #fff; }
-.booking-selected-time { max-width: 220px; margin-top: 3px; }
+.booking-time-button-selected:hover { border-color: var(--primary); background: var(--primary-dark); color: #fff; }
+.booking-custom-time-toggle { justify-self: start; border: 0; padding: 2px 0; background: transparent; color: var(--primary-dark); cursor: pointer; font-size: 0.74rem; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.booking-custom-time-toggle:hover { color: var(--primary); }
+.booking-selected-time { max-width: 250px; margin-top: 2px; }
+.booking-selected-time input[readonly] { background: var(--background); color: var(--ink); cursor: default; }
 .public-input-with-icon { position: relative; display: flex; align-items: center; }
 .public-input-with-icon svg { position: absolute; left: 13px; z-index: 1; color: var(--ink-muted); pointer-events: none; }
 .public-input-with-icon input { padding-left: 39px; }
@@ -371,6 +380,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .public-services-panel { padding: 0; }
   .booking-date-strip { grid-template-columns: repeat(7, minmax(42px, 1fr)); gap: 5px; }
   .booking-date-button { min-height: 60px; padding-inline: 2px; }
+  .booking-time-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .booking-time-button { min-height: 44px; padding-inline: 4px; }
   .public-status-card { margin-top: 42px; padding: 24px 18px; }
   .public-status-summary { grid-template-columns: 1fr; }
   .public-status-actions { align-items: stretch; flex-direction: column; }

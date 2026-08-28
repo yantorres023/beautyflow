@@ -32,6 +32,12 @@ const suggestedTimes = Array.from(
   },
 );
 
+const bookingTimePeriods = [
+  { label: "Manhã", hint: "09:00–11:30", start: 9 * 60, end: 12 * 60 },
+  { label: "Tarde", hint: "12:00–17:30", start: 12 * 60, end: 18 * 60 },
+  { label: "Noite", hint: "18:00–18:30", start: 18 * 60, end: 19 * 60 },
+] as const;
+
 function FieldError({ field, errors }: { field: string; errors?: Record<string, string[]> }) {
   const message = errors?.[field]?.[0];
   return message ? <span className="field-error" id={`${field}-error`}>{message}</span> : null;
@@ -68,7 +74,12 @@ function availableSlots(date: string, durationMinutes: number, timeZone: string,
 }
 
 function displayTime(time: string) {
-  return time.replace(":", "h");
+  return time;
+}
+
+function timeToMinutes(time: string) {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
 }
 
 export function PublicBookingForm({ organizationSlug, services, minDate, timeZone, busyIntervals }: { organizationSlug: string; services: PublicService[]; minDate: string; timeZone: string; busyIntervals: BusyInterval[] }) {
@@ -76,6 +87,7 @@ export function PublicBookingForm({ organizationSlug, services, minDate, timeZon
   const [selectedServiceId, setSelectedServiceId] = useState("");
   const [selectedDate, setSelectedDate] = useState(minDate);
   const [selectedTime, setSelectedTime] = useState("");
+  const [showCustomTime, setShowCustomTime] = useState(false);
   const [copied, setCopied] = useState(false);
   const errors = state.fieldErrors;
   const selectedService = services.find((service) => service.id === selectedServiceId);
@@ -86,6 +98,15 @@ export function PublicBookingForm({ organizationSlug, services, minDate, timeZon
   const slots = useMemo(
     () => selectedService ? availableSlots(selectedDate, selectedService.durationMinutes, timeZone, busyIntervals) : [],
     [busyIntervals, selectedDate, selectedService, timeZone],
+  );
+  const slotGroups = useMemo(
+    () => bookingTimePeriods
+      .map((period) => ({ ...period, slots: slots.filter((time) => {
+        const minutes = timeToMinutes(time);
+        return minutes >= period.start && minutes < period.end;
+      }) }))
+      .filter((period) => period.slots.length > 0),
+    [slots],
   );
 
   function changeDate(date: string) {
@@ -124,7 +145,79 @@ export function PublicBookingForm({ organizationSlug, services, minDate, timeZon
         <label className="field"><span>E-mail <small>(opcional)</small></span><input name="email" type="email" autoComplete="email" placeholder="voce@exemplo.com" aria-invalid={Boolean(errors?.email)} aria-describedby={describedBy("email", errors)} /><FieldError field="email" errors={errors} /></label>
         <label className="field full"><span>Serviço</span><select name="serviceId" required value={selectedServiceId} onChange={(event) => changeService(event.target.value)} aria-invalid={Boolean(errors?.serviceId)} aria-describedby={describedBy("serviceId", errors)}><option value="" disabled>Selecione um serviço</option>{services.map((service) => <option value={service.id} key={service.id}>{service.name} · {formatCurrency(service.priceCents)} · {service.durationMinutes} min</option>)}</select><FieldError field="serviceId" errors={errors} /></label>
         <div className="field full booking-calendar-picker"><div className="booking-picker-heading"><span>Escolha o dia</span><small>Próximos 14 dias</small></div><div className="booking-date-strip" aria-label="Escolha uma data">{dates.map((date) => { const meta = dateMeta(date, timeZone); return <button type="button" className={`booking-date-button${selectedDate === date ? " booking-date-button-selected" : ""}`} key={date} onClick={() => changeDate(date)} aria-pressed={selectedDate === date}><span>{meta.weekday}</span><strong>{meta.day}</strong><small>{meta.month}</small></button>; })}</div><label className="field booking-other-date"><span>Ou escolha outra data</span><input name="date" type="date" min={minDate} required value={selectedDate} onChange={(event) => changeDate(event.target.value)} aria-invalid={Boolean(errors?.date)} aria-describedby={describedBy("date", errors)} /></label><FieldError field="date" errors={errors} /></div>
-        <div className="field full booking-time-picker"><div className="booking-picker-heading"><span>Horários sugeridos</span><small>{selectedService ? `${slots.length} opções para ${selectedService.durationMinutes} min` : "Escolha um serviço primeiro"}</small></div>{selectedService ? <div className="booking-time-grid">{slots.map((time) => <button type="button" className={`booking-time-button${selectedTime === time ? " booking-time-button-selected" : ""}`} key={time} onClick={() => setSelectedTime(time)} aria-pressed={selectedTime === time}><Clock3 size={14} aria-hidden="true" />{displayTime(time)}</button>)}{slots.length === 0 && <p className="field-hint">Não encontramos um horário livre neste dia. Tente outra data.</p>}</div> : <p className="field-hint">Os horários aparecem depois que você escolher o serviço.</p>}<label className="field booking-selected-time"><span>Horário selecionado</span><div className="public-input-with-icon"><Clock3 size={16} aria-hidden="true" /><input name="time" type="time" step="900" required value={selectedTime} onChange={(event) => setSelectedTime(event.target.value)} aria-invalid={Boolean(errors?.time)} aria-describedby={describedBy("time", errors)} /></div></label><FieldError field="time" errors={errors} /></div>
+        <div className="field full booking-time-picker">
+          <div className="booking-picker-heading">
+            <span>Escolha o horário</span>
+            <small aria-live="polite">
+              {selectedService
+                ? `${slots.length} ${slots.length === 1 ? "horário livre" : "horários livres"} · ${selectedService.durationMinutes} min`
+                : "Escolha um serviço primeiro"}
+            </small>
+          </div>
+          {selectedService ? (
+            <>
+              {slotGroups.length > 0 ? (
+                <div className="booking-time-groups" aria-label="Horários disponíveis">
+                  {slotGroups.map((group) => (
+                    <section className="booking-time-group" key={group.label}>
+                      <div className="booking-time-group-heading">
+                        <span>{group.label}</span>
+                        <small>{group.hint}</small>
+                      </div>
+                      <div className="booking-time-grid">
+                        {group.slots.map((time) => (
+                          <button
+                            type="button"
+                            className={`booking-time-button${selectedTime === time ? " booking-time-button-selected" : ""}`}
+                            key={time}
+                            onClick={() => {
+                              setSelectedTime(time);
+                              setShowCustomTime(false);
+                            }}
+                            aria-pressed={selectedTime === time}
+                          >
+                            {displayTime(time)}
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              ) : (
+                <p className="field-hint">Não encontramos um horário livre neste dia. Tente outra data.</p>
+              )}
+              <button
+                className="booking-custom-time-toggle"
+                type="button"
+                onClick={() => setShowCustomTime((visible) => !visible)}
+                aria-pressed={showCustomTime}
+              >
+                {showCustomTime ? "Fechar escolha manual" : "Não encontrou? Digite outro horário"}
+              </button>
+            </>
+          ) : (
+            <p className="field-hint">Os horários aparecem depois que você escolher o serviço.</p>
+          )}
+          <label className="field booking-selected-time">
+            <span>Horário escolhido <small>{showCustomTime ? "Digite no formato 09:00" : "Selecione uma opção acima"}</small></span>
+            <div className="public-input-with-icon">
+              <Clock3 size={16} aria-hidden="true" />
+              <input
+                id="booking-custom-time"
+                name="time"
+                type="time"
+                step="900"
+                required
+                readOnly={!showCustomTime}
+                value={selectedTime}
+                onChange={(event) => setSelectedTime(event.target.value)}
+                aria-invalid={Boolean(errors?.time)}
+                aria-describedby={describedBy("time", errors)}
+              />
+            </div>
+          </label>
+          <FieldError field="time" errors={errors} />
+        </div>
         <label className="field full"><span>Observações <small>(opcional)</small></span><textarea name="notes" placeholder="Conte algo importante para o atendimento." aria-invalid={Boolean(errors?.notes)} aria-describedby={describedBy("notes", errors)} /><FieldError field="notes" errors={errors} /></label>
       </div>
       <p className="field-hint public-booking-hint">O pedido entra como solicitação e será confirmado pela profissional. Não é necessário criar uma conta. Os horários sugeridos consideram o expediente padrão do espaço.</p>
