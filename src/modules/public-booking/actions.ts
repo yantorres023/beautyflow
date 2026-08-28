@@ -7,6 +7,7 @@ import { localDateTimeToUtc } from "@/lib/dates";
 import { stringOrNull } from "@/lib/validation";
 import { db } from "@/server/db";
 import { publicBookingSchema } from "@/modules/public-booking/schemas";
+import { createPublicBookingToken, hashPublicBookingToken } from "@/modules/public-booking/tokens";
 
 function fieldErrors(error: { flatten: () => { fieldErrors: Record<string, string[] | undefined> } }) {
   return Object.fromEntries(
@@ -75,6 +76,7 @@ export async function createPublicBookingAction(_previous: ActionState, formData
   if (conflict) return errorState("Esse horário já está ocupado. Escolha outro horário.", { time: ["Esse horário já está ocupado."] });
 
   const email = stringOrNull(parsed.data.email);
+  const publicBookingToken = createPublicBookingToken();
 
   try {
     await db.$transaction(async (transaction) => {
@@ -96,7 +98,7 @@ export async function createPublicBookingAction(_previous: ActionState, formData
         },
       });
 
-      await transaction.appointment.create({
+      return transaction.appointment.create({
         data: {
           organizationId: organization.id,
           memberId: member.id,
@@ -108,6 +110,7 @@ export async function createPublicBookingAction(_previous: ActionState, formData
           priceCents: service.priceCents,
           status: "SCHEDULED",
           notes: stringOrNull(parsed.data.notes),
+          publicBookingTokenHash: hashPublicBookingToken(publicBookingToken),
         },
       });
     });
@@ -120,5 +123,7 @@ export async function createPublicBookingAction(_previous: ActionState, formData
   revalidatePath("/dashboard");
   revalidatePath("/financeiro");
   revalidatePath(`/agendar/${organization.slug}`);
-  return successState("Pedido enviado. A profissional confirmará seu horário em breve.");
+  return successState("Pedido enviado. A profissional confirmará seu horário em breve.", {
+    statusUrl: `/agendar/${organization.slug}/status/${publicBookingToken}`,
+  });
 }

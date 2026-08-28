@@ -25,7 +25,11 @@ Every tenant-owned query and mutation must resolve the authenticated organizatio
 
 The public `/demo` route is intentionally separate from Auth.js and Prisma: it must use fictional browser-local state only, never accept secrets, and never read or write tenant data.
 
-The public `/agendar/[slug]` route resolves the organization by its public slug, accepts only service/date/time/contact data, and creates a `SCHEDULED` appointment for the first active member until per-member availability is introduced.
+The public `/agendar/[slug]` route resolves the organization by its public slug, accepts only service/date/time/contact data, and creates a `SCHEDULED` appointment for the first active member until per-member availability is introduced. It stores only a hash of the private status token and returns `/agendar/[slug]/status/[token]`; never expose the raw token or tenant identifiers in database queries.
+
+The public booking UI suggests 30-minute slots between 09:00 and 19:00 for the next 14 days and filters known busy intervals. This is a presentation default until working hours are configurable; server-side validation and the PostgreSQL exclusion constraint remain authoritative. The private status URL is the source of truth for clients; a transition to `CONFIRMED` may attempt a confirmation email when the client supplied an address, but Resend delivery is best-effort and must never block the status change.
+
+The authenticated agenda accepts a validated `?semana=YYYY-MM-DD` query to browse any week, while preserving the organization timezone when calculating week boundaries.
 
 ## Testing and Contributions
 
@@ -33,7 +37,7 @@ Add regression coverage for business rules, especially tenant isolation, appoint
 
 ## Security and Configuration
 
-Keep secrets in ignored `.env.local`; document names only in `.env.example`. Required values include `DATABASE_URL`, `AUTH_SECRET`, `RESEND_API_KEY`, and `EMAIL_FROM`. Passwords must be hashed with a modern password hash, password-reset tokens must be hashed and single-use, and authentication errors must not reveal whether an account exists. Email confirmation is temporarily disabled in the MVP, so new accounts are activated at registration.
+Keep secrets in ignored `.env.local`; document names only in `.env.example`. Required values include `DATABASE_URL`, `AUTH_SECRET`, `RESEND_API_KEY`, and `EMAIL_FROM`. Passwords must be hashed with a modern password hash, password-reset tokens must be hashed and single-use, public booking tokens must be hashed and non-guessable, and authentication errors must not reveal whether an account exists. Email confirmation is temporarily disabled in the MVP, so new accounts are activated at registration.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

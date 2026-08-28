@@ -8,6 +8,7 @@ import { stringOrNull } from "@/lib/validation";
 import { appointmentSchema } from "@/modules/appointments/schemas";
 import { db } from "@/server/db";
 import { requireAuthContext } from "@/server/auth-context";
+import { sendAppointmentConfirmationEmail } from "@/server/mailer";
 
 function isConflictError(error: unknown) {
   if (typeof error !== "object" || error === null) return false;
@@ -75,10 +76,31 @@ export async function transitionAppointmentAction(formData: FormData) {
   if (!parsed.success) return;
   const context = await requireAuthContext();
 
-  await db.appointment.updateMany({
+  const appointment = await db.appointment.findFirst({
     where: { id: parsed.data.id, organizationId: context.organization.id },
+    include: { client: true, service: true, organization: true },
+  });
+  if (!appointment) return;
+
+  const updated = await db.appointment.updateMany({
+    where: { id: appointment.id, organizationId: context.organization.id, status: appointment.status },
     data: { status: parsed.data.status },
   });
+  if (updated.count !== 1) return;
+
+  if (parsed.data.status === "CONFIRMED" && appointment.status === "SCHEDULED" && appointment.client.email) {
+    try {
+      await sendAppointmentConfirmationEmail({
+        to: appointment.client.email,
+        clientName: appointment.client.name,
+        serviceName: appointment.service.name,
+        startsAt: appointment.startsAt,
+        timezone: appointment.organization.timezone,
+      });
+    } catch (error) {
+      console.error("[BeautyFlow] Não foi possível enviar a confirmação do agendamento.", error);
+    }
+  }
 
   revalidatePath("/agenda");
   revalidatePath("/dashboard");

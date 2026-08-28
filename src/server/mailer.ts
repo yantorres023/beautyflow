@@ -49,3 +49,42 @@ export async function sendPasswordResetEmail(input: { to: string; name: string; 
 
   return !result.error;
 }
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character] ?? character);
+}
+
+export async function sendAppointmentConfirmationEmail(input: {
+  to: string;
+  clientName: string;
+  serviceName: string;
+  startsAt: Date | string;
+  timezone: string;
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM;
+  const scheduledAt = new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "full",
+    timeStyle: "short",
+    timeZone: input.timezone,
+  }).format(new Date(input.startsAt));
+
+  if (!apiKey || !from) {
+    if (process.env.NODE_ENV !== "production") {
+      console.info(`[BeautyFlow] Appointment confirmation email for ${input.to}: ${scheduledAt}`);
+      return true;
+    }
+
+    return false;
+  }
+
+  const resend = new Resend(apiKey);
+  const result = await resend.emails.send({
+    from,
+    to: input.to,
+    subject: "Seu horário foi confirmado",
+    html: `<p>Olá, ${escapeHtml(input.clientName)}!</p><p>Seu horário para <strong>${escapeHtml(input.serviceName)}</strong> foi confirmado para ${scheduledAt}.</p><p>Até lá!</p>`,
+  });
+
+  return !result.error;
+}

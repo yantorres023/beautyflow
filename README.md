@@ -34,7 +34,9 @@ Acesse `http://localhost:3000/demo` para explorar o MVP sem criar conta ou confi
 
 ## Link de agendamento para clientes
 
-Depois de criar sua conta, o dashboard mostra o link público do seu espaço em `/agendar/<slug>`. Compartilhe esse endereço para que clientes escolham um serviço, data e horário sem criar conta. Cada solicitação entra como “Agendado” e deve ser confirmada pela profissional; conflitos de horário continuam sendo bloqueados no servidor e no banco.
+Depois de criar sua conta, o dashboard mostra o link público do seu espaço em `/agendar/<slug>`. Compartilhe esse endereço para que clientes escolham um serviço, data e horário sem criar conta. O calendário sugere os próximos 14 dias e horários livres no expediente padrão de 09:00 a 19:00; a validação final continua no servidor e no banco. Cada solicitação entra como “Agendado” e deve ser confirmada pela profissional.
+
+Após enviar o pedido, o cliente recebe um link privado de acompanhamento e pode copiá-lo para guardar. A página mostra “Pedido recebido” enquanto aguarda a decisão e “Horário confirmado” quando a profissional aceita. O e-mail via Resend é somente opcional e best-effort; a conta de teste pode restringir os destinatários, portanto o fluxo não depende dele.
 
 ## Comandos úteis
 

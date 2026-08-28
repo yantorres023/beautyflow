@@ -1,5 +1,6 @@
-import { CalendarDays, Check, CircleCheck, CircleX, Clock3, UserRound, X } from "lucide-react";
-import { addDays, formatDate, formatTime, startOfLocalWeekInTimezone, toDateInputValue } from "@/lib/dates";
+import Link from "next/link";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, CircleCheck, CircleX, Clock3, UserRound, X } from "lucide-react";
+import { addDays, formatDate, formatTime, localDateTimeToUtc, startOfLocalWeekInTimezone, toDateInputValue } from "@/lib/dates";
 import { formatCurrency } from "@/lib/money";
 import { transitionAppointmentAction } from "@/modules/appointments/actions";
 import { AppointmentForm } from "@/modules/appointments/components";
@@ -14,9 +15,20 @@ const statusLabels = {
   NO_SHOW: "No-show",
 } as const;
 
-export default async function AgendaPage() {
+function getWeekStart(value: string | undefined, timeZone: string) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return startOfLocalWeekInTimezone(new Date(), timeZone);
+  const requestedDate = localDateTimeToUtc(value, "12:00", timeZone);
+  return Number.isNaN(requestedDate.getTime())
+    ? startOfLocalWeekInTimezone(new Date(), timeZone)
+    : startOfLocalWeekInTimezone(requestedDate, timeZone);
+}
+
+export default async function AgendaPage({ searchParams }: { searchParams: Promise<{ semana?: string | string[] }> }) {
   const context = await requireAuthContext();
-  const weekStart = startOfLocalWeekInTimezone(new Date(), context.organization.timezone);
+  const params = await searchParams;
+  const requestedWeek = typeof params.semana === "string" ? params.semana : undefined;
+  const weekStart = getWeekStart(requestedWeek, context.organization.timezone);
+  const currentWeekStart = startOfLocalWeekInTimezone(new Date(), context.organization.timezone);
   const weekEnd = addDays(weekStart, 7);
   const [appointments, clients, services] = await Promise.all([
     db.appointment.findMany({
@@ -37,7 +49,8 @@ export default async function AgendaPage() {
 
   return (
     <>
-      <div className="page-heading"><div><p className="eyebrow">Seu ritmo</p><h1>Agenda</h1><p>Uma semana clara para você chegar preparada a cada atendimento.</p></div><span className="status-badge status-confirmed">{appointments.length} nesta semana</span></div>
+      <div className="page-heading"><div><p className="eyebrow">Seu ritmo</p><h1>Agenda</h1><p>Uma semana clara para você chegar preparada a cada atendimento.</p></div><span className="status-badge status-confirmed">{appointments.length} no período</span></div>
+      <div className="page-heading-actions calendar-page-actions"><div className="calendar-navigation" aria-label="Navegação da agenda"><Link className="icon-button" href={`/agenda?semana=${toDateInputValue(addDays(weekStart, -7), context.organization.timezone)}`} aria-label="Semana anterior" title="Semana anterior"><ChevronLeft size={17} aria-hidden="true" /></Link><Link className="button button-small button-ghost" href={toDateInputValue(weekStart, context.organization.timezone) === toDateInputValue(currentWeekStart, context.organization.timezone) ? "/agenda" : `/agenda?semana=${toDateInputValue(currentWeekStart, context.organization.timezone)}`}>Esta semana</Link><Link className="icon-button" href={`/agenda?semana=${toDateInputValue(addDays(weekStart, 7), context.organization.timezone)}`} aria-label="Próxima semana" title="Próxima semana"><ChevronRight size={17} aria-hidden="true" /></Link></div><form className="calendar-jump-form" method="get"><label className="field"><span className="sr-only">Ir para a semana da data</span><input type="date" name="semana" defaultValue={toDateInputValue(weekStart, context.organization.timezone)} /></label><button className="button button-small button-secondary" type="submit">Ir</button></form></div>
       <section className="card calendar-card">
         <div className="calendar-toolbar"><div><strong>{formatDate(weekStart, context.organization.timezone)} — {formatDate(addDays(weekStart, 6), context.organization.timezone)}</strong><p className="card-subtitle">Horários no fuso do seu espaço</p></div><div className="legend"><span><i />Confirmado</span><span><i />Agendado</span></div></div>
         <div className="calendar-week">

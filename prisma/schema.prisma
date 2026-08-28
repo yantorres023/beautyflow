@@ -165,6 +165,7 @@ model Appointment {
   priceCents      Int
   status          AppointmentStatus  @default(SCHEDULED)
   notes           String?            @db.Text
+  publicBookingTokenHash String?      @unique @db.VarChar(128)
   createdAt       DateTime           @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime           @updatedAt @db.Timestamptz(3)
   organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)

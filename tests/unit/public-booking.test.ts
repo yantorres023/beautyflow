@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { publicBookingSchema } from "@/modules/public-booking/schemas";
+import { publicBookingSchema, publicBookingTokenSchema } from "@/modules/public-booking/schemas";
+import { createPublicBookingToken, hashPublicBookingToken } from "@/modules/public-booking/tokens";
 
 const validBooking = {
   organizationSlug: "studio-marina-abc123",
@@ -25,5 +26,14 @@ describe("public booking schema", () => {
       expect(result.error.flatten().fieldErrors.phone).toBeDefined();
       expect(result.error.flatten().fieldErrors.serviceId).toBeDefined();
     }
+  });
+
+  it("creates a private status token that is stored as a hash", () => {
+    const token = createPublicBookingToken();
+
+    expect(publicBookingTokenSchema.safeParse(token).success).toBe(true);
+    expect(hashPublicBookingToken(token)).toHaveLength(64);
+    expect(hashPublicBookingToken(token)).not.toBe(token);
+    expect(hashPublicBookingToken(token)).toBe(hashPublicBookingToken(token));
   });
 });

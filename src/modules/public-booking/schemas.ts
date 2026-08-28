@@ -10,3 +10,5 @@ export const publicBookingSchema = z.object({
   time: z.string().regex(/^\d{2}:\d{2}$/, "Informe um horário válido."),
   notes: z.string().trim().max(1000, "Escreva no máximo 1.000 caracteres.").optional(),
 });
+
+export const publicBookingTokenSchema = z.string().regex(/^[a-f0-9]{64}$/i);
