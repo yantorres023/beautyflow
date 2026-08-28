@@ -6,7 +6,7 @@ BeautyFlow é uma aplicação web para profissionais de beleza organizarem agend
 
 - Next.js com App Router, React e TypeScript.
 - PostgreSQL e Prisma 7, com migrações versionadas em `prisma/migrations`.
-- Auth.js com credenciais próprias, confirmação de e-mail e recuperação de senha por Resend.
+- Auth.js com credenciais próprias e recuperação de senha por Resend.
 - Server Components e Server Actions; validação de entrada com Zod.
 - Módulos em `src/modules`, regras e integrações no servidor em `src/server`, e páginas em `src/app`.
 
@@ -24,13 +24,17 @@ npm run db:seed
 npm run dev
 ```
 
-No PowerShell, use `Copy-Item .env.example .env.local`. Ajuste `AUTH_SECRET` e, em produção, configure `RESEND_API_KEY` e `EMAIL_FROM`. Em desenvolvimento, os links de confirmação e recuperação são registrados no terminal quando o Resend não está configurado.
+No PowerShell, use `Copy-Item .env.example .env.local`. Ajuste `AUTH_SECRET` e, em produção, configure `RESEND_API_KEY` e `EMAIL_FROM`. A confirmação de e-mail está temporariamente desativada no MVP; em desenvolvimento, os links de recuperação são registrados no terminal quando o Resend não está configurado.
 
 Abra `http://localhost:3000`. O usuário seed usa `SEED_USER_EMAIL` e `SEED_USER_PASSWORD`; altere esses valores no `.env.local` antes de executar o seed.
 
 ## Demonstração sem cadastro
 
 Acesse `http://localhost:3000/demo` para explorar o MVP sem criar conta ou configurar o banco. A demonstração usa apenas dados fictícios, permite navegar pelos módulos e simular cadastros, agendamentos, pagamentos e despesas. As alterações ficam isoladas no `localStorage` deste navegador; use “Resetar dados” para restaurar o cenário inicial. Nunca informe dados reais de clientes ou financeiros nesse ambiente.
+
+## Link de agendamento para clientes
+
+Depois de criar sua conta, o dashboard mostra o link público do seu espaço em `/agendar/<slug>`. Compartilhe esse endereço para que clientes escolham um serviço, data e horário sem criar conta. Cada solicitação entra como “Agendado” e deve ser confirmada pela profissional; conflitos de horário continuam sendo bloqueados no servidor e no banco.
 
 ## Comandos úteis
 

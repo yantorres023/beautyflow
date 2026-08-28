@@ -7,7 +7,7 @@ BeautyFlow is a tenant-aware Next.js application for a beauty professional to ma
 ## Project Structure
 
 - `src/app/`: App Router pages, route groups, layouts, and the Auth.js route handler.
-- `src/modules/`: feature modules (`auth`, `clients`, `services`, `appointments`, `payments`, `expenses`, `dashboard`, and `demo`). Keep queries, commands, schemas, types, and feature components together.
+- `src/modules/`: feature modules (`auth`, `clients`, `services`, `appointments`, `payments`, `expenses`, `dashboard`, `demo`, and `public-booking`). Keep queries, commands, schemas, types, and feature components together.
 - `src/server/`: Prisma, authentication context, authorization, and mail delivery integrations.
 - `src/lib/` and `src/components/`: shared utilities, layout pieces, and reusable UI primitives.
 - `prisma/`: `schema.prisma`, committed migrations, and development seed data.
@@ -25,13 +25,15 @@ Every tenant-owned query and mutation must resolve the authenticated organizatio
 
 The public `/demo` route is intentionally separate from Auth.js and Prisma: it must use fictional browser-local state only, never accept secrets, and never read or write tenant data.
 
+The public `/agendar/[slug]` route resolves the organization by its public slug, accepts only service/date/time/contact data, and creates a `SCHEDULED` appointment for the first active member until per-member availability is introduced.
+
 ## Testing and Contributions
 
 Add regression coverage for business rules, especially tenant isolation, appointment conflicts, payment balances, and cash-versus-accrual calculations. Pull requests must describe the behavior changed, list validation commands, link an issue when relevant, and include screenshots for UI changes. Use short imperative Conventional Commit-style messages such as `feat: add appointment calendar` or `fix: prevent overlapping appointments`.
 
 ## Security and Configuration
 
-Keep secrets in ignored `.env.local`; document names only in `.env.example`. Required values include `DATABASE_URL`, `AUTH_SECRET`, `RESEND_API_KEY`, and `EMAIL_FROM`. Passwords must be hashed with a modern password hash, reset/verification tokens must be hashed and single-use, and authentication errors must not reveal whether an account exists.
+Keep secrets in ignored `.env.local`; document names only in `.env.example`. Required values include `DATABASE_URL`, `AUTH_SECRET`, `RESEND_API_KEY`, and `EMAIL_FROM`. Passwords must be hashed with a modern password hash, password-reset tokens must be hashed and single-use, and authentication errors must not reveal whether an account exists. Email confirmation is temporarily disabled in the MVP, so new accounts are activated at registration.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

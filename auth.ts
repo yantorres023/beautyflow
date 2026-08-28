@@ -34,7 +34,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { email: parsed.data.email },
         });
 
-        if (!user || !user.emailVerifiedAt) {
+        if (!user) {
           return null;
         }
 

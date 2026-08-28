@@ -54,7 +54,7 @@ export function RegisterForm() {
       <p className="field-hint">Use pelo menos 12 caracteres.</p>
       <Feedback state={state} />
       <button className="button button-primary button-wide" disabled={pending}>{pending ? "Criando..." : "Criar minha conta"}</button>
-      <p className="form-footnote">Você receberá um link para confirmar seu e-mail.</p>
+      <p className="form-footnote">Sua conta ficará pronta imediatamente. Você poderá entrar assim que o cadastro for concluído.</p>
     </form>
   );
 }

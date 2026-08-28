@@ -9,7 +9,7 @@ import { signIn, signOut } from "@/../auth";
 import { errorState, successState, type ActionState } from "@/lib/action-result";
 import { emailSchema, passwordSchema } from "@/lib/validation";
 import { registerSchema, requestResetSchema, tokenSchema } from "@/modules/auth/schemas";
-import { sendPasswordResetEmail, sendVerificationEmail } from "@/server/mailer";
+import { sendPasswordResetEmail } from "@/server/mailer";
 
 function fieldErrors(error: { flatten: () => { fieldErrors: Record<string, string[] | undefined> } }) {
   return Object.fromEntries(
@@ -54,14 +54,14 @@ export async function registerAction(_previous: ActionState, formData: FormData)
   }
 
   const passwordHash = await argon2.hash(parsed.data.password);
-  const rawToken = createRawToken();
 
-  const user = await db.$transaction(async (transaction) => {
+  await db.$transaction(async (transaction) => {
     const createdUser = await transaction.user.create({
       data: {
         name: parsed.data.name,
         email: parsed.data.email,
         passwordHash,
+        emailVerifiedAt: new Date(),
       },
     });
 
@@ -82,29 +82,10 @@ export async function registerAction(_previous: ActionState, formData: FormData)
       },
     });
 
-    await transaction.authToken.create({
-      data: {
-        userId: createdUser.id,
-        purpose: "EMAIL_VERIFICATION",
-        tokenHash: hashToken(rawToken),
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      },
-    });
-
     return createdUser;
   });
 
-  const emailSent = await sendVerificationEmail({
-    to: user.email,
-    name: user.name,
-    token: rawToken,
-  });
-
-  if (!emailSent) {
-    return errorState("A conta foi criada, mas não foi possível enviar o e-mail de confirmação. Tente novamente mais tarde.");
-  }
-
-  redirect(`/verificar-email?email=${encodeURIComponent(user.email)}`);
+  redirect("/entrar?registered=1");
 }
 
 export async function loginAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
@@ -125,7 +106,7 @@ export async function loginAction(_previous: ActionState, formData: FormData): P
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      return errorState("E-mail ou senha inválidos. Confirme seu e-mail antes de entrar.");
+      return errorState("E-mail ou senha inválidos.");
     }
 
     throw error;
@@ -147,7 +128,7 @@ export async function requestPasswordResetAction(_previous: ActionState, formDat
 
   const user = await db.user.findUnique({ where: { email: parsed.data.email } });
 
-  if (user && user.emailVerifiedAt) {
+  if (user) {
     const rawToken = createRawToken();
     await db.authToken.deleteMany({ where: { userId: user.id, purpose: "PASSWORD_RESET", usedAt: null } });
     await db.authToken.create({
